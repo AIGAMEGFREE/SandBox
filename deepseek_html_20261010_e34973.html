@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SandBox Ultra — Электроника</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+        background: radial-gradient(ellipse at top, #1a1a3e 0%, #0a0a15 100%);
+        font-family: 'Segoe UI', Arial, sans-serif;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 8px;
+        overflow-x: hidden;
+    }
+    
+    h1 {
+        font-size: 22px;
+        background: linear-gradient(90deg, #00d4ff, #ff6b6b, #ffd700, #00d4ff);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shine 3s linear infinite;
+        margin-bottom: 6px;
+        letter-spacing: 2px;
+    }
+    
+    @keyframes shine { to { background-position: 200% center; } }
+    
+    .top-bar {
+        display: flex; gap: 8px; align-items: center; justify-content: center;
+        flex-wrap: wrap; padding: 6px 12px;
+        background: rgba(30, 30, 60, 0.7);
+        border: 1px solid #444; border-radius: 10px;
+        backdrop-filter: blur(10px); margin-bottom: 8px;
+        width: 100%; max-width: 1200px;
+    }
+    
+    .top-bar-group {
+        display: flex; gap: 6px; align-items: center;
+        padding: 0 8px; border-right: 1px solid #444;
+    }
+    
+    .top-bar-group:last-child { border-right: none; }
+    
+    .top-bar-label {
+        font-size: 10px; color: #888;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+    
+    .brush-preview {
+        width: 30px; height: 30px; border-radius: 50%;
+        background: #00d4ff; border: 2px solid #fff;
+        transition: all 0.2s; display: inline-block; flex-shrink: 0;
+    }
+    
+    input[type="range"] { accent-color: #00d4ff; width: 80px; cursor: pointer; }
+    
+    .toggle-btn, .action-btn {
+        padding: 6px 10px; border: 1px solid #555;
+        border-radius: 6px; background: rgba(50, 50, 80, 0.7);
+        color: white; cursor: pointer; font-size: 11px;
+        transition: all 0.15s; white-space: nowrap;
+    }
+    
+    .toggle-btn:hover, .action-btn:hover {
+        border-color: #00d4ff;
+        background: rgba(80, 80, 120, 0.9);
+    }
+    
+    .toggle-btn.active {
+        border-color: #00d4ff;
+        background: rgba(0, 212, 255, 0.2);
+        color: #00d4ff;
+    }
+    
+    .canvas-wrapper {
+        position: relative; border-radius: 12px; padding: 4px;
+        background: linear-gradient(135deg, #00d4ff33, #ffd70033, #ff6b6b33);
+        box-shadow: 0 0 40px rgba(0, 212, 255, 0.15);
+    }
+    
+    #gameCanvas {
+        display: block; border-radius: 8px;
+        background: #0a0a15; cursor: crosshair;
+    }
+    
+    .materials-bar {
+        width: 100%; max-width: 1200px; margin-top: 8px;
+        background: rgba(20, 20, 40, 0.8);
+        border: 1px solid #444; border-radius: 10px;
+        padding: 8px; overflow: hidden;
+    }
+    
+    .tabs-row {
+        display: flex; gap: 4px; margin-bottom: 8px;
+        overflow-x: auto; padding-bottom: 4px;
+    }
+    
+    .tabs-row::-webkit-scrollbar { height: 5px; }
+    .tabs-row::-webkit-scrollbar-track { background: #222; }
+    .tabs-row::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 3px; }
+    
+    .tab-btn {
+        padding: 6px 12px; border: 1px solid #555;
+        border-radius: 6px; background: rgba(40, 40, 70, 0.6);
+        color: #ccc; cursor: pointer; font-size: 11px;
+        white-space: nowrap; flex-shrink: 0;
+        transition: all 0.15s;
+    }
+    
+    .tab-btn:hover { color: white; background: rgba(60, 60, 100, 0.8); }
+    
+    .tab-btn.active {
+        background: linear-gradient(135deg, #00d4ff, #0088cc);
+        color: #000; font-weight: bold; border-color: #00d4ff;
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    }
+    
+    .tab-btn.tech-tab {
+        background: linear-gradient(135deg, #1a3a5c, #2a5a8c);
+        border-color: #00aaff;
+    }
+    
+    .tab-btn.tech-tab.active {
+        background: linear-gradient(135deg, #00d4ff, #66e0ff);
+        color: #000;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.7);
+    }
+    
+    .materials-scroll {
+        display: flex; gap: 5px; overflow-x: auto;
+        padding: 4px 2px 8px;
+    }
+    
+    .materials-scroll::-webkit-scrollbar { height: 6px; }
+    .materials-scroll::-webkit-scrollbar-track { background: #222; }
+    .materials-scroll::-webkit-scrollbar-thumb { background: #00d4ff; border-radius: 3px; }
+    
+    .material-btn {
+        min-width: 62px; height: 58px;
+        border: 2px solid #444; border-radius: 8px;
+        background: linear-gradient(180deg, rgba(50, 50, 80, 0.9), rgba(30, 30, 50, 0.9));
+        color: white; cursor: pointer;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 2px; flex-shrink: 0; padding: 3px;
+        transition: all 0.15s;
+    }
+    
+    .material-btn:hover {
+        transform: translateY(-3px);
+        border-color: #00d4ff;
+    }
+    
+    .material-btn.active {
+        border-color: #00d4ff;
+        background: linear-gradient(180deg, rgba(0, 100, 150, 0.9), rgba(0, 60, 100, 0.9));
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+    }
+    
+    .material-btn.tech-btn {
+        border-color: #00aaff;
+        background: linear-gradient(180deg, rgba(26, 58, 92, 0.9), rgba(16, 38, 62, 0.9));
+    }
+    
+    .material-btn.tech-btn.active {
+        border-color: #00d4ff;
+        background: linear-gradient(180deg, rgba(0, 120, 180, 0.9), rgba(0, 80, 130, 0.9));
+        box-shadow: 0 0 25px rgba(0, 212, 255, 0.7);
+    }
+    
+    .material-btn .icon { font-size: 20px; line-height: 1; }
+    .material-btn .name {
+        font-size: 8px; line-height: 1;
+        text-align: center; color: #ddd;
+    }
+    
+    .material-btn.active .name { color: #00d4ff; font-weight: bold; }
+    
+    .hint {
+        margin-top: 8px; font-size: 11px;
+        color: #666; text-align: center;
+    }
+    
+    .hint kbd {
+        background: #333; border: 1px solid #555;
+        border-radius: 3px; padding: 1px 5px;
+        color: #00d4ff; font-family: monospace; font-size: 10px;
+    }
+    
+    .fps-counter {
+        font-size: 10px; color: #666; font-family: monospace;
+        padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 4px;
+    }
+    
+    .fps-counter span { color: #00d4ff; }
+</style>
+</head>
+<body>
+
+<h1>⚡ SANDBOX ULTRA — ЭЛЕКТРОНИКА ⚡</h1>
+
+<div class="top-bar">
+    <div class="top-bar-group">
+        <span class="top-bar-label">🖌️ Кисть</span>
+        <input type="range" id="brushSize" min="1" max="30" value="5">
+        <span id="brushSizeValue" style="min-width:22px; font-size:12px; color:#00d4ff;">5</span>
+        <div class="brush-preview" id="brushPreview"></div>
+    </div>
+    
+    <div class="top-bar-group">
+        <button class="toggle-btn active" id="pauseBtn">⏸️ Пауза</button>
+        <button class="toggle-btn active" id="gravityBtn">⬇️ Гравитация</button>
+        <button class="toggle-btn" id="replaceBtn">🔁 Замена</button>
+    </div>
+    
+    <div class="top-bar-group">
+        <button class="action-btn" id="borderBtn">🖼️ Рамка</button>
+        <button class="action-btn" id="fillBtn">🌊 Заполнить</button>
+        <button class="action-btn" id="clearBtn">🗑️ Очистить</button>
+    </div>
+    
+    <div class="top-bar-group">
+        <span class="fps-counter">FPS: <span id="fps">60</span></span>
+        <span class="fps-counter">Частиц: <span id="particles">0</span></span>
+    </div>
+</div>
+
+<div class="canvas-wrapper">
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<div class="materials-bar">
+    <div class="tabs-row" id="tabsRow"></div>
+    <div class="materials-scroll" id="materialsScroll"></div>
+</div>
+
+<div class="hint">
+    <kbd>ЛКМ</kbd> рисовать · <kbd>ПКМ</kbd> стирать · <kbd>Колесо</kbd> размер · 
+    <kbd>1-9,0</kbd> быстрый выбор · <kbd>Пробел</kbd> пауза · <kbd>C</kbd> очистить
+</div>
+
+<script>
+// ============= БАЗА =============
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+const CELL_SIZE = 5;
+const COLS = 200;
+const ROWS = 130;
+canvas.width = COLS * CELL_SIZE;
+canvas.height = ROWS * CELL_SIZE;
+
+// ============= МАТЕРИАЛЫ =============
+const M = {
+    EMPTY: 0,
+    // Природа
+    SAND: 1, WATER: 2, STONE: 3, WOOD: 4, DIRT: 5, GRASS: 6,
+    SNOW: 7, ICE: 8, MUD: 9, SALT: 10, SANDSTONE: 11,
+    // Огонь/энергия
+    FIRE: 20, LAVA: 21, SMOKE: 22, STEAM: 23, ASH: 24, COAL: 25,
+    SPARK: 26, LIGHTNING: 27, PLASMA: 28, FIREWORK: 29,
+    // Жидкости
+    OIL: 40, ACID: 41, MAGMA: 42, SLIME: 43, HEAL: 44, NITRO: 45,
+    ANTIMATTER: 46, MERCURY: 47, BLOOD: 48,
+    // Твёрдые
+    METAL: 60, GLASS: 61, GOLD: 62, DIAMOND: 63, OBSIDIAN: 64,
+    CRYSTAL: 65, RUBY: 66, EMERALD: 67, AMETHYST: 68, URANIUM: 69,
+    CONCRETE: 70, BRICK: 71, PLANK: 72, STEEL: 73, TITANIUM: 74,
+    // Взрывчатые
+    GUNPOWDER: 80, TNT: 81, BOMB: 82, DYNAMITE: 83, NUKE: 84,
+    // Растительность
+    PLANT: 90, SEED: 91, VINE: 92, FLOWER: 93, MUSHROOM: 94,
+    SPORE: 95, TREE: 96, LEAF: 97, CACTUS: 98, BAMBOO: 99,
+    // === ЭЛЕКТРОНИКА ===
+    WIRE: 100, CABLE: 101, PCB: 102, CHIP: 103, RESISTOR: 104,
+    CAPACITOR: 105, TRANSISTOR: 106, DIODE: 107, LED: 108,
+    BATTERY: 109, ACCUMULATOR: 110, GENERATOR: 111, SOLAR: 112,
+    MOTOR: 113, PUMP: 114, FAN: 115, SPEAKER: 116, MICROPHONE: 117,
+    LAMP: 118, LIGHT: 119, NEON: 120, LASER: 121,
+    COMPUTER: 122, SCREEN: 123, ANTENNA: 124, WIFI: 125,
+    BUTTON: 126, SWITCH: 127, LEVER: 128, SENSOR: 129, TIMER: 130,
+    RELAY: 131, FUSE: 132, TRANSFORMER: 133, COIL: 134, MAGNET: 135,
+    // Механика
+    GEAR: 140, PISTON: 141, VALVE: 142, PIPE: 143, SPRING: 144,
+    WHEEL: 145, AXLE: 146, ROPE: 147, CHAIN: 148, CONVEYOR: 149,
+    // Химия
+    CHEM_RED: 160, CHEM_BLUE: 161, CHEM_GREEN: 162, CHEM_YELLOW: 163,
+    CHEM_PURPLE: 164, CHEM_ORANGE: 165, CHEM_CYAN: 166, CHEM_PINK: 167,
+    // Специальные
+    VOID: 180, CLONE: 181, PORTAL: 182, WARP: 183, RAINBOW: 184,
+    GLITCH: 185, MATRIX: 186, HOLOGRAM: 187,
+    WALL: 190, ERASER: 191
+};
+
+const COLORS = {
+    [M.EMPTY]: '#0a0a15',
+    [M.SAND]: '#e8c84a', [M.WATER]: '#3a7bd5', [M.STONE]: '#808080',
+    [M.WOOD]: '#8b5a2b', [M.DIRT]: '#654321', [M.GRASS]: '#4caf50',
+    [M.SNOW]: '#ffffff', [M.ICE]: '#aaddff', [M.MUD]: '#4a3520',
+    [M.SALT]: '#f0f0f0', [M.SANDSTONE]: '#d4a76a',
+    [M.FIRE]: '#ff4500', [M.LAVA]: '#ff6600', [M.SMOKE]: '#555555',
+    [M.STEAM]: '#c0c0c0', [M.ASH]: '#3a3a3a', [M.COAL]: '#1a1a1a',
+    [M.SPARK]: '#ffff88', [M.LIGHTNING]: '#ffff00', [M.PLASMA]: '#ff00ff',
+    [M.FIREWORK]: '#ff66cc',
+    [M.OIL]: '#1a1a1a', [M.ACID]: '#66ff00', [M.MAGMA]: '#ff2200',
+    [M.SLIME]: '#7fff00', [M.HEAL]: '#ff69b4', [M.NITRO]: '#ff0066',
+    [M.ANTIMATTER]: '#00ffff', [M.MERCURY]: '#c0c0d0', [M.BLOOD]: '#8b0000',
+    [M.METAL]: '#b0b0c0', [M.GLASS]: '#88ccff', [M.GOLD]: '#ffd700',
+    [M.DIAMOND]: '#b0ffff', [M.OBSIDIAN]: '#1a0a1a', [M.CRYSTAL]: '#ddaaff',
+    [M.RUBY]: '#e0115f', [M.EMERALD]: '#50c878', [M.AMETHYST]: '#9932cc',
+    [M.URANIUM]: '#7fff00', [M.CONCRETE]: '#999999', [M.BRICK]: '#8b4513',
+    [M.PLANK]: '#c19a6b', [M.STEEL]: '#9090a0', [M.TITANIUM]: '#c0c8d8',
+    [M.GUNPOWDER]: '#4a4a4a', [M.TNT]: '#cc0000', [M.BOMB]: '#333333',
+    [M.DYNAMITE]: '#dd2200', [M.NUKE]: '#ffaa00',
+    [M.PLANT]: '#2e7d32', [M.SEED]: '#8b7355', [M.VINE]: '#2f5f2f',
+    [M.FLOWER]: '#ff88aa', [M.MUSHROOM]: '#cc4422', [M.SPORE]: '#88ff88',
+    [M.TREE]: '#5d4037', [M.LEAF]: '#4caf50', [M.CACTUS]: '#558b2f',
+    [M.BAMBOO]: '#827717',
+    // Электроника
+    [M.WIRE]: '#b87333', [M.CABLE]: '#333333', [M.PCB]: '#1a5c1a',
+    [M.CHIP]: '#404040', [M.RESISTOR]: '#a08060', [M.CAPACITOR]: '#3060a0',
+    [M.TRANSISTOR]: '#202020', [M.DIODE]: '#cc0000', [M.LED]: '#ff00ff',
+    [M.BATTERY]: '#22cc22', [M.ACCUMULATOR]: '#44dd44', [M.GENERATOR]: '#ffaa00',
+    [M.SOLAR]: '#2244aa', [M.MOTOR]: '#666666', [M.PUMP]: '#4488cc',
+    [M.FAN]: '#a0a0a0', [M.SPEAKER]: '#404040', [M.MICROPHONE]: '#606060',
+    [M.LAMP]: '#ffffaa', [M.LIGHT]: '#ffffcc', [M.NEON]: '#ff00ff',
+    [M.LASER]: '#ff0000', [M.COMPUTER]: '#303040', [M.SCREEN]: '#00ff00',
+    [M.ANTENNA]: '#808080', [M.WIFI]: '#00aaff',
+    [M.BUTTON]: '#ee4444', [M.SWITCH]: '#8888ff', [M.LEVER]: '#a08040',
+    [M.SENSOR]: '#00dddd', [M.TIMER]: '#dddd00', [M.RELAY]: '#607080',
+    [M.FUSE]: '#ff8800', [M.TRANSFORMER]: '#505070', [M.COIL]: '#c06030',
+    [M.MAGNET]: '#cc3333',
+    // Механика
+    [M.GEAR]: '#a0a0a0', [M.PISTON]: '#c0c0c0', [M.VALVE]: '#808080',
+    [M.PIPE]: '#707070', [M.SPRING]: '#d0d0d0', [M.WHEEL]: '#404040',
+    [M.AXLE]: '#606060', [M.ROPE]: '#8b6f47', [M.CHAIN]: '#707080',
+    [M.CONVEYOR]: '#303030',
+    // Химия
+    [M.CHEM_RED]: '#ff2222', [M.CHEM_BLUE]: '#2244ff',
+    [M.CHEM_GREEN]: '#22ff22', [M.CHEM_YELLOW]: '#ffff22',
+    [M.CHEM_PURPLE]: '#9922ff', [M.CHEM_ORANGE]: '#ff8800',
+    [M.CHEM_CYAN]: '#22ffff', [M.CHEM_PINK]: '#ff22aa',
+    // Специальные
+    [M.VOID]: '#000000', [M.CLONE]: '#ff69b4', [M.PORTAL]: '#9400d3',
+    [M.WARP]: '#8000ff', [M.RAINBOW]: '#ff00ff', [M.GLITCH]: '#00ff88',
+    [M.MATRIX]: '#00ff00', [M.HOLOGRAM]: '#00ddff',
+    [M.WALL]: '#505050', [M.ERASER]: '#ff00ff'
+};
+
+// ============= КАТЕГОРИИ =============
+const CATEGORIES = {
+    electronics: {
+        name: '⚡ ЭЛЕКТРОНИКА', tech: true,
+        items: [
+            { m: M.WIRE, icon: '🔌', name: 'Провод' },
+            { m: M.CABLE, icon: '➖', name: 'Кабель' },
+            { m: M.PCB, icon: '🟩', name: 'Плата' },
+            { m: M.CHIP, icon: '🖥️', name: 'Чип' },
+            { m: M.RESISTOR, icon: '🟫', name: 'Резистор' },
+            { m: M.CAPACITOR, icon: '🔵', name: 'Конденсатор' },
+            { m: M.TRANSISTOR, icon: '⬛', name: 'Транзистор' },
+            { m: M.DIODE, icon: '🔺', name: 'Диод' },
+            { m: M.LED, icon: '💡', name: 'LED' },
+            { m: M.BATTERY, icon: '🔋', name: 'Батарея' },
+            { m: M.ACCUMULATOR, icon: '⚡', name: 'Аккумулятор' },
+            { m: M.GENERATOR, icon: '🔋', name: 'Генератор' },
+            { m: M.SOLAR, icon: '☀️', name: 'Солнечная' },
+            { m: M.MOTOR, icon: '⚙️', name: 'Мотор' },
+            { m: M.PUMP, icon: '💧', name: 'Насос' },
+            { m: M.FAN, icon: '🌀', name: 'Вентилятор' },
+            { m: M.SPEAKER, icon: '🔊', name: 'Динамик' },
+            { m: M.MICROPHONE, icon: '🎤', name: 'Микрофон' },
+            { m: M.LAMP, icon: '💡', name: 'Лампа' },
+            { m: M.LIGHT, icon: '🔆', name: 'Свет' },
+            { m: M.NEON, icon: '💜', name: 'Неон' },
+            { m: M.LASER, icon: '🔴', name: 'Лазер' },
+            { m: M.COMPUTER, icon: '💻', name: 'Компьютер' },
+            { m: M.SCREEN, icon: '📺', name: 'Экран' },
+            { m: M.ANTENNA, icon: '📡', name: 'Антенна' },
+            { m: M.WIFI, icon: '📶', name: 'Wi-Fi' },
+            { m: M.BUTTON, icon: '🔴', name: 'Кнопка' },
+            { m: M.SWITCH, icon: '🎛️', name: 'Выключатель' },
+            { m: M.LEVER, icon: '🕹️', name: 'Рычаг' },
+            { m: M.SENSOR, icon: '📡', name: 'Датчик' },
+            { m: M.TIMER, icon: '⏱️', name: 'Таймер' },
+            { m: M.RELAY, icon: '🔁', name: 'Реле' },
+            { m: M.FUSE, icon: '🧯', name: 'Предохранитель' },
+            { m: M.TRANSFORMER, icon: '⚡', name: 'Трансформатор' },
+            { m: M.COIL, icon: '🌀', name: 'Катушка' },
+            { m: M.MAGNET, icon: '🧲', name: 'Магнит' }
+        ]
+    },
+    mechanics: {
+        name: '⚙️ МЕХАНИКА', tech: true,
+        items: [
+            { m: M.GEAR, icon: '⚙️', name: 'Шестерня' },
+            { m: M.PISTON, icon: '🔧', name: 'Поршень' },
+            { m: M.VALVE, icon: '🚰', name: 'Клапан' },
+            { m: M.PIPE, icon: '🚬', name: 'Труба' },
+            { m: M.SPRING, icon: '🌀', name: 'Пружина' },
+            { m: M.WHEEL, icon: '⭕', name: 'Колесо' },
+            { m: M.AXLE, icon: '➖', name: 'Ось' },
+            { m: M.ROPE, icon: '🧵', name: 'Верёвка' },
+            { m: M.CHAIN, icon: '⛓️', name: 'Цепь' },
+            { m: M.CONVEYOR, icon: '➡️', name: 'Конвейер' },
+            { m: M.MAGNET, icon: '🧲', name: 'Магнит' }
+        ]
+    },
+    chemistry: {
+        name: '🧪 ХИМИЯ',
+        items: [
+            { m: M.CHEM_RED, icon: '🔴', name: 'Красный' },
+            { m: M.CHEM_BLUE, icon: '🔵', name: 'Синий' },
+            { m: M.CHEM_GREEN, icon: '🟢', name: 'Зелёный' },
+            { m: M.CHEM_YELLOW, icon: '🟡', name: 'Жёлтый' },
+            { m: M.CHEM_PURPLE, icon: '🟣', name: 'Фиолет.' },
+            { m: M.CHEM_ORANGE, icon: '🟠', name: 'Оранжевый' },
+            { m: M.CHEM_CYAN, icon: '🩵', name: 'Голубой' },
+            { m: M.CHEM_PINK, icon: '🩷', name: 'Розовый' },
+            { m: M.ACID, icon: '☢️', name: 'Кислота' },
+            { m: M.MERCURY, icon: '🥈', name: 'Ртуть' },
+            { m: M.BLOOD, icon: '🩸', name: 'Кровь' },
+            { m: M.SLIME, icon: '🟢', name: 'Слизь' },
+            { m: M.HEAL, icon: '💗', name: 'Зелье' },
+            { m: M.NITRO, icon: '💉', name: 'Нитроглиц.' }
+        ]
+    },
+    nature: {
+        name: '🌍 ПРИРОДА',
+        items: [
+            { m: M.SAND, icon: '🟡', name: 'Песок' },
+            { m: M.DIRT, icon: '🟫', name: 'Земля' },
+            { m: M.MUD, icon: '🟤', name: 'Грязь' },
+            { m: M.SANDSTONE, icon: '🟨', name: 'Песчаник' },
+            { m: M.GRASS, icon: '🟩', name: 'Трава' },
+            { m: M.WOOD, icon: '🪵', name: 'Дерево' },
+            { m: M.PLANK, icon: '📏', name: 'Доска' },
+            { m: M.PLANT, icon: '🌿', name: 'Растение' },
+            { m: M.TREE, icon: '🌳', name: 'Дерево' },
+            { m: M.LEAF, icon: '🍃', name: 'Лист' },
+            { m: M.VINE, icon: '🌱', name: 'Лоза' },
+            { m: M.FLOWER, icon: '🌸', name: 'Цветок' },
+            { m: M.MUSHROOM, icon: '🍄', name: 'Гриб' },
+            { m: M.SEED, icon: '🌰', name: 'Семя' },
+            { m: M.SPORE, icon: '✨', name: 'Спора' },
+            { m: M.CACTUS, icon: '🌵', name: 'Кактус' },
+            { m: M.BAMBOO, icon: '🎋', name: 'Бамбук' },
+            { m: M.SNOW, icon: '❄️', name: 'Снег' },
+            { m: M.ICE, icon: '🧊', name: 'Лёд' },
+            { m: M.SALT, icon: '🧂', name: 'Соль' }
+        ]
+    },
+    liquids: {
+        name: '💧 ЖИДКОСТИ',
+        items: [
+            { m: M.WATER, icon: '💧', name: 'Вода' },
+            { m: M.OIL, icon: '🛢️', name: 'Нефть' },
+            { m: M.LAVA, icon: '🌋', name: 'Лава' },
+            { m: M.MAGMA, icon: '🔥', name: 'Магма' },
+            { m: M.ACID, icon: '☢️', name: 'Кислота' },
+            { m: M.SLIME, icon: '🟢', name: 'Слизь' },
+            { m: M.HEAL, icon: '💗', name: 'Зелье' },
+            { m: M.NITRO, icon: '💉', name: 'Нитроглиц.' },
+            { m: M.PLASMA, icon: '⚡', name: 'Плазма' },
+            { m: M.ANTIMATTER, icon: '🌀', name: 'Антиматерия' },
+            { m: M.MERCURY, icon: '🥈', name: 'Ртуть' },
+            { m: M.BLOOD, icon: '🩸', name: 'Кровь' }
+        ]
+    },
+    fire: {
+        name: '🔥 ОГОНЬ',
+        items: [
+            { m: M.FIRE, icon: '🔥', name: 'Огонь' },
+            { m: M.SMOKE, icon: '💨', name: 'Дым' },
+            { m: M.STEAM, icon: '☁️', name: 'Пар' },
+            { m: M.ASH, icon: '🌫️', name: 'Пепел' },
+            { m: M.COAL, icon: '⚫', name: 'Уголь' },
+            { m: M.SPARK, icon: '✨', name: 'Искра' },
+            { m: M.LIGHTNING, icon: '⚡', name: 'Молния' },
+            { m: M.PLASMA, icon: '🌟', name: 'Плазма' },
+            { m: M.FIREWORK, icon: '🎆', name: 'Фейерверк' }
+        ]
+    },
+    solids: {
+        name: '🪨 ТВЁРДЫЕ',
+        items: [
+            { m: M.STONE, icon: '⬛', name: 'Камень' },
+            { m: M.WALL, icon: '🧱', name: 'Стена' },
+            { m: M.BRICK, icon: '🧱', name: 'Кирпич' },
+            { m: M.CONCRETE, icon: '🟫', name: 'Бетон' },
+            { m: M.GLASS, icon: '🔷', name: 'Стекло' },
+            { m: M.METAL, icon: '⚙️', name: 'Металл' },
+            { m: M.STEEL, icon: '🔩', name: 'Сталь' },
+            { m: M.TITANIUM, icon: '🛡️', name: 'Титан' },
+            { m: M.GOLD, icon: '🥇', name: 'Золото' },
+            { m: M.DIAMOND, icon: '💎', name: 'Алмаз' },
+            { m: M.CRYSTAL, icon: '🔮', name: 'Кристалл' },
+            { m: M.RUBY, icon: '❤️', name: 'Рубин' },
+            { m: M.EMERALD, icon: '💚', name: 'Изумруд' },
+            { m: M.AMETHYST, icon: '💜', name: 'Аметист' },
+            { m: M.OBSIDIAN, icon: '🖤', name: 'Обсидиан' },
+            { m: M.URANIUM, icon: '☢️', name: 'Уран' }
+        ]
+    },
+    explosive: {
+        name: '💥 ВЗРЫВЧАТКА',
+        items: [
+            { m: M.GUNPOWDER, icon: '💣', name: 'Порох' },
+            { m: M.TNT, icon: '🧨', name: 'ТНТ' },
+            { m: M.BOMB, icon: '💥', name: 'Бомба' },
+            { m: M.DYNAMITE, icon: '🧨', name: 'Динамит' },
+            { m: M.NUKE, icon: '☢️', name: 'Ядерная' },
+            { m: M.NITRO, icon: '💉', name: 'Нитроглиц.' },
+            { m: M.FIREWORK, icon: '🎆', name: 'Фейерверк' }
+        ]
+    },
+    special: {
+        name: '✨ СПЕЦИАЛЬНЫЕ',
+        items: [
+            { m: M.VOID, icon: '🕳️', name: 'Пустота' },
+            { m: M.CLONE, icon: '👥', name: 'Клон' },
+            { m: M.PORTAL, icon: '🌀', name: 'Портал' },
+            { m: M.WARP, icon: '🚀', name: 'Варп' },
+            { m: M.RAINBOW, icon: '🌈', name: 'Радуга' },
+            { m: M.GLITCH, icon: '📺', name: 'Глитч' },
+            { m: M.MATRIX, icon: '🟢', name: 'Матрица' },
+            { m: M.HOLOGRAM, icon: '💠', name: 'Голограмма' },
+            { m: M.ERASER, icon: '🧹', name: 'Ластик' }
+        ]
+    }
+};
+
+// ============= СОСТОЯНИЕ =============
+let grid = [];
+let updated = [];
+let colorSeed = [];
+let charge = []; // Заряд для электроники
+let frame = 0;
+
+let currentMaterial = M.WIRE;
+let currentTab = 'electronics';
+let brushSize = 5;
+let isDrawing = false;
+let isErasing = false;
+let paused = false;
+let gravityEnabled = true;
+let replaceMode = false;
+
+let fps = 60;
+let frameCount = 0;
+let lastFpsUpdate = performance.now();
+
+// Быстрый выбор
+const quickSelect = [M.WIRE, M.BATTERY, M.LAMP, M.MOTOR, M.GEAR, M.WATER, M.SAND, M.STONE, M.FIRE, M.TNT];
+
+// ============= ИНИЦИАЛИЗАЦИЯ =============
+function initGrid() {
+    grid = new Array(ROWS);
+    updated = new Array(ROWS);
+    colorSeed = new Array(ROWS);
+    charge = new Array(ROWS);
+    for (let y = 0; y < ROWS; y++) {
+        grid[y] = new Uint8Array(COLS);
+        updated[y] = new Uint8Array(COLS);
+        colorSeed[y] = new Uint8Array(COLS);
+        charge[y] = new Uint8Array(COLS);
+        for (let x = 0; x < COLS; x++) colorSeed[y][x] = (Math.random() * 255) | 0;
+    }
+}
+
+// ============= ПРОХОДИМОСТЬ =============
+function isPassable(m) {
+    return m === M.EMPTY || m === M.WATER || m === M.SMOKE || m === M.STEAM ||
+           m === M.FIRE || m === M.PLANT || m === M.GRASS || m === M.FLOWER ||
+           m === M.MUSHROOM || m === M.VINE || m === M.SEED || m === M.SPORE ||
+           m === M.SNOW || m === M.BUBBLE ||
+           (m >= M.CHEM_RED && m <= M.CHEM_PINK);
+}
+
+function isSolidBlock(m) {
+    if (m === M.EMPTY) return false;
+    if (isPassable(m)) return false;
+    // Электроника, жидкости, газы, огонь - не блокируют движение материи
+    if (m >= 100 && m < 200) {
+        // Электроника, химия, специальные — не блокируют (кроме некоторых)
+        return m === M.WALL || m === M.PCB || m === M.COMPUTER || m === M.SCREEN ||
+               m === M.BATTERY || m === M.MOTOR || m === M.GENERATOR;
+    }
+    return true;
+}
+
+// ============= ЭЛЕКТРОНИКА - ФИЗИКА ЗАРЯДА =============
+function updateElectronics() {
+    // Батареи заряжают соседние элементы
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            const m = grid[y][x];
+            
+            // Источники: батарея, аккумулятор, генератор, солнце — всегда заряжены
+            if (m === M.BATTERY || m === M.ACCUMULATOR || m === M.GENERATOR) {
+                charge[y][x] = 1;
+                // Заряжаем соседей
+                for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                    const nx = x+dx, ny = y+dy;
+                    if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+                    const nm = grid[ny][nx];
+                    if (nm === M.WIRE || nm === M.CABLE || nm === M.PCB || 
+                        nm === M.LAMP || nm === M.LED || nm === M.MOTOR ||
+                        nm === M.COMPUTER || nm === M.SCREEN || nm === M.FAN) {
+                        charge[ny][nx] = 1;
+                    }
+                }
+            }
+            
+            // Солнечные панели заряжаются от света
+            if (m === M.SOLAR) {
+                // Проверяем, есть ли свет сверху (небо)
+                let hasLight = true;
+                for (let ly = y - 1; ly >= 0; ly--) {
+                    if (grid[ly][x] !== M.EMPTY) { hasLight = false; break; }
+                }
+                if (hasLight) charge[y][x] = 1;
+            }
+            
+            // Провода передают заряд
+            if (m === M.WIRE || m === M.CABLE || m === M.PCB) {
+                if (charge[y][x] > 0) {
+                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                        const nx = x+dx, ny = y+dy;
+                        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+                        const nm = grid[ny][nx];
+                        if (nm === M.WIRE || nm === M.CABLE || nm === M.PCB ||
+                            nm === M.LAMP || nm === M.LED || nm === M.MOTOR ||
+                            nm === M.COMPUTER || nm === M.SCREEN) {
+                            charge[ny][nx] = 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Потребители разряжают соседей (для баланса — но упрощённо)
+    // Лампы, моторы работают если есть заряд
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            const m = grid[y][x];
+            // Проверяем, есть ли рядом заряженная батарея или провод с зарядом
+            if (m === M.LAMP || m === M.LED || m === M.MOTOR || 
+                m === M.FAN || m === M.SPEAKER || m === M.LIGHT) {
+                let powered = charge[y][x] > 0;
+                if (!powered) {
+                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                        const nx = x+dx, ny = y+dy;
+                        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+                        if (charge[ny][nx] > 0) { powered = true; break; }
+                    }
+                }
+                if (powered) charge[y][x] = 1;
+            }
+        }
+    }
+}
+
+// ============= ФИЗИКА =============
+function update() {
+    if (paused) return;
+    
+    for (let y = 0; y < ROWS; y++) {
+        updated[y].fill(0);
+        // Заряд слегка спадает каждый кадр
+        for (let x = 0; x < COLS; x++) {
+            if (charge[y][x] > 0 && Math.random() < 0.05) charge[y][x] = 0;
+        }
+    }
+    
+    // Электроника
+    updateElectronics();
+    
+    // Материя
+    for (let y = ROWS - 1; y >= 0; y--) {
+        const ltr = (frame + y) % 2 === 0;
+        const startX = ltr ? 0 : COLS - 1;
+        const endX = ltr ? COLS : -1;
+        const step = ltr ? 1 : -1;
+        
+        for (let x = startX; x !== endX; x += step) {
+            if (updated[y][x]) continue;
+            const m = grid[y][x];
+            if (m === M.EMPTY) continue;
+            
+            switch (m) {
+                case M.SAND: case M.DIRT: case M.SALT: case M.GUNPOWDER:
+                case M.ASH: case M.SNOW: case M.SEED: case M.SPORE:
+                case M.COAL: case M.SANDSTONE:
+                    updatePowder(x, y, m); break;
+                case M.WATER: updateWater(x, y); break;
+                case M.OIL: updateOil(x, y); break;
+                case M.ACID: updateAcid(x, y); break;
+                case M.LAVA: updateLava(x, y); break;
+                case M.MAGMA: updateMagma(x, y); break;
+                case M.SLIME: updateSlime(x, y); break;
+                case M.HEAL: updateHeal(x, y); break;
+                case M.NITRO: updateNitro(x, y); break;
+                case M.PLASMA: updatePlasma(x, y); break;
+                case M.ANTIMATTER: updateAntimatter(x, y); break;
+                case M.MERCURY: updateWater(x, y); break;
+                case M.BLOOD: updateSlime(x, y); break;
+                case M.FIRE: updateFire(x, y); break;
+                case M.SMOKE: case M.STEAM: updateGas(x, y, m); break;
+                case M.ICE: updateIce(x, y); break;
+                case M.PLANT: updatePlant(x, y); break;
+                case M.GRASS: updateGrass(x, y); break;
+                case M.SEED: updateSeed(x, y); break;
+                case M.TNT: case M.BOMB: case M.DYNAMITE: updateExplosive(x, y, m); break;
+                case M.NUKE: updateNuke(x, y); break;
+                case M.SPARK: updateSpark(x, y); break;
+                case M.LIGHTNING: updateLightning(x, y); break;
+                case M.PORTAL: updatePortal(x, y); break;
+                case M.VOID: updateVoid(x, y); break;
+                case M.CLONE: updateClone(x, y); break;
+                case M.GLITCH: updateGlitch(x, y); break;
+                case M.MATRIX: updateMatrix(x, y); break;
+                case M.HOLOGRAM: updateHologram(x, y); break;
+                case M.MAGNET: updateMagnet(x, y); break;
+                case M.FIREWORK: updateFirework(x, y); break;
+                case M.FUSE: updateFuse(x, y); break;
+                case M.RELAY: updateRelay(x, y); break;
+                case M.LASER: updateLaser(x, y); break;
+                case M.NEON: updateNeon(x, y); break;
+                case M.LED: updateLED(x, y); break;
+                case M.SPEAKER: updateSpeaker(x, y); break;
+                case M.MOTOR: updateMotor(x, y); break;
+                case M.FAN: updateFan(x, y); break;
+                case M.PUMP: updatePump(x, y); break;
+                case M.SENSOR: updateSensor(x, y); break;
+                case M.TIMER: updateTimer(x, y); break;
+                // Химия
+                case M.CHEM_RED: case M.CHEM_BLUE: case M.CHEM_GREEN:
+                case M.CHEM_YELLOW: case M.CHEM_PURPLE: case M.CHEM_ORANGE:
+                case M.CHEM_CYAN: case M.CHEM_PINK:
+                    updateChemical(x, y, m); break;
+            }
+        }
+    }
+    
+    frame++;
+}
+
+// ============= МАТЕРИЯ =============
+function updatePowder(x, y, m) {
+    if (!gravityEnabled || y >= ROWS - 1) return;
+    if (m === M.GUNPOWDER) {
+        for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (grid[ny][nx]===M.FIRE||grid[ny][nx]===M.LAVA||grid[ny][nx]===M.SPARK) {
+                explode(x, y, 12); return;
+            }
+        }
+    }
+    const below = grid[y+1][x];
+    if (below===M.EMPTY||below===M.WATER||below===M.OIL||below===M.ACID||
+        below===M.SMOKE||below===M.FIRE||below===M.STEAM) {
+        swap(x,y,x,y+1); return;
+    }
+    const dir = Math.random() > 0.5 ? 1 : -1;
+    for (const d of [dir,-dir]) {
+        const nx = x+d;
+        if (nx<0||nx>=COLS) continue;
+        const nb = grid[y+1][nx];
+        if (nb===M.EMPTY||nb===M.WATER||nb===M.OIL) { swap(x,y,nx,y+1); return; }
+    }
+}
+
+function updateWater(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.FIRE||n===M.LAVA||n===M.MAGMA) {
+            if (Math.random()<0.25) { grid[y][x]=M.STEAM; return; }
+        }
+        // Электричество в воде
+        if (charge[ny][nx] > 0) {
+            grid[y][x] = M.SPARK;
+            return;
+        }
+    }
+    if (!gravityEnabled) return;
+    updateLiquidFlow(x, y, 5, [M.EMPTY, M.SMOKE, M.STEAM, M.FIRE]);
+}
+
+function updateOil(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        if (grid[ny][nx]===M.FIRE||grid[ny][nx]===M.LAVA) {
+            if (Math.random()<0.3) { grid[y][x]=M.FIRE; return; }
+        }
+    }
+    if (!gravityEnabled) return;
+    updateLiquidFlow(x, y, 3, [M.EMPTY, M.SMOKE, M.STEAM]);
+}
+
+function updateAcid(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n!==M.EMPTY && n!==M.WATER && n!==M.ACID && n!==M.SMOKE &&
+            n!==M.STEAM && n!==M.FIRE && n!==M.LAVA && n!==M.OBSIDIAN &&
+            n!==M.DIAMOND && n!==M.GLASS) {
+            if (Math.random()<0.04) {
+                grid[ny][nx]=M.EMPTY; updated[ny][nx]=1;
+                if (Math.random()<0.2) { grid[y][x]=M.EMPTY; return; }
+            }
+        }
+    }
+    if (y>=ROWS-1) { if (Math.random()<0.01) grid[y][x]=M.EMPTY; return; }
+    if (!gravityEnabled) return;
+    updateLiquidFlow(x, y, 3, [M.EMPTY, M.SMOKE, M.FIRE]);
+}
+
+function updateLava(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.WOOD||n===M.PLANT||n===M.OIL||n===M.GUNPOWDER||n===M.COAL||
+            n===M.VINE||n===M.FLOWER||n===M.MUSHROOM||n===M.SEED||n===M.PLANK) {
+            grid[ny][nx]=M.FIRE; updated[ny][nx]=1;
+        } else if (n===M.WATER||n===M.ICE||n===M.SNOW) {
+            grid[ny][nx]=M.STEAM; updated[ny][nx]=1;
+            if (Math.random()<0.3) { grid[y][x]=M.STONE; return; }
+        }
+    }
+    if (Math.random()<0.0005) { grid[y][x]=M.STONE; return; }
+    if (!gravityEnabled || y>=ROWS-1) return;
+    const below = grid[y+1][x];
+    if (below===M.EMPTY||below===M.WATER||below===M.OIL||below===M.SMOKE) {
+        swap(x,y,x,y+1); return;
+    }
+}
+
+function updateMagma(x, y) { updateLava(x, y); }
+function updateSlime(x, y) { if (gravityEnabled) updateLiquidFlow(x, y, 2, [M.EMPTY, M.SMOKE]); }
+function updateHeal(x, y) { if (gravityEnabled) updateLiquidFlow(x, y, 4, [M.EMPTY, M.SMOKE]); }
+
+function updateNitro(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.FIRE||n===M.LAVA||n===M.SPARK||n===M.LIGHTNING) {
+            explode(x, y, 18); return;
+        }
+    }
+    if (gravityEnabled) updateLiquidFlow(x, y, 3, [M.EMPTY, M.SMOKE]);
+}
+
+function updatePlasma(x, y) {
+    if (Math.random()<0.02) { grid[y][x]=M.FIRE; return; }
+    if (y > 0 && grid[y-1][x] === M.EMPTY && Math.random() < 0.6) swap(x, y, x, y-1);
+}
+
+function updateAntimatter(x, y) {
+    for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (dx===0 && dy===0) continue;
+            const n = grid[ny][nx];
+            if (n!==M.EMPTY && n!==M.ANTIMATTER) {
+                if (Math.random() < 0.3) { grid[ny][nx]=M.EMPTY; updated[ny][nx]=1; }
+            }
+        }
+    }
+    if (Math.random() < 0.005) grid[y][x] = M.EMPTY;
+    if (gravityEnabled) updateLiquidFlow(x, y, 2, [M.EMPTY]);
+}
+
+function updateLiquidFlow(x, y, spread, passable) {
+    if (y < ROWS-1) {
+        const below = grid[y+1][x];
+        if (passable.includes(below)) { swap(x,y,x,y+1); return; }
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        for (const d of [dir,-dir]) {
+            const nx = x+d;
+            if (nx<0||nx>=COLS) continue;
+            if (passable.includes(grid[y+1][nx])) { swap(x,y,nx,y+1); return; }
+        }
+    }
+    const dir = Math.random() > 0.5 ? 1 : -1;
+    for (let s = 1; s <= spread; s++) {
+        const nx = x + dir*s;
+        if (nx<0||nx>=COLS) break;
+        if (grid[y][nx] === M.EMPTY) { swap(x, y, nx, y); return; }
+        if (!passable.includes(grid[y][nx])) break;
+    }
+}
+
+function updateFire(x, y) {
+    if (Math.random() < 0.04) { grid[y][x]=M.SMOKE; return; }
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.WOOD||n===M.PLANT||n===M.OIL||n===M.COAL||n===M.VINE||
+            n===M.FLOWER||n===M.MUSHROOM||n===M.SEED||n===M.PLANK||n===M.LEAF||
+            n===M.ROPE||n===M.BAMBOO||n===M.TREE) {
+            if (Math.random() < 0.12) { grid[ny][nx]=M.FIRE; updated[ny][nx]=1; }
+        } else if (n===M.GUNPOWDER||n===M.TNT||n===M.BOMB||n===M.DYNAMITE||n===M.NITRO) {
+            explode(nx, ny, 15); return;
+        } else if (n===M.WATER||n===M.ICE||n===M.SNOW) {
+            grid[y][x]=M.SMOKE; return;
+        }
+    }
+    if (y > 0 && grid[y-1][x] === M.EMPTY && Math.random() < 0.4) swap(x, y, x, y-1);
+}
+
+function updateGas(x, y, m) {
+    const dissipate = m===M.STEAM ? 0.001 : 0.004;
+    if (Math.random() < dissipate) { grid[y][x]=M.EMPTY; return; }
+    if (m === M.STEAM && y === 0 && Math.random() < 0.02) { grid[y][x]=M.WATER; return; }
+    if (y === 0) { if (Math.random()<0.005) grid[y][x]=M.EMPTY; return; }
+    if (grid[y-1][x] === M.EMPTY && Math.random() < 0.7) swap(x, y, x, y-1);
+}
+
+function updateIce(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.FIRE||n===M.LAVA||n===M.MAGMA) {
+            if (Math.random()<0.15) { grid[y][x]=M.WATER; return; }
+        }
+        if (n===M.WATER && Math.random()<0.003) { grid[ny][nx]=M.ICE; updated[ny][nx]=1; }
+    }
+}
+
+function updatePlant(x, y) {
+    if (Math.random()<0.005 && y>0) {
+        let hasWater = false;
+        for (let dy=-3;dy<=3;dy++) for (let dx=-3;dx<=3;dx++) {
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (grid[ny][nx]===M.WATER) { hasWater=true; break; }
+        }
+        if (hasWater && grid[y-1][x]===M.EMPTY) { grid[y-1][x]=M.PLANT; updated[y-1][x]=1; }
+    }
+}
+
+function updateGrass(x, y) {
+    if (Math.random()<0.0003 && y>0 && grid[y-1][x]===M.EMPTY) {
+        for (let dy=1;dy<=3 && y+dy<ROWS;dy++) {
+            if (grid[y+dy][x]===M.DIRT||grid[y+dy][x]===M.MUD) {
+                grid[y-1][x]=M.GRASS; updated[y-1][x]=1; break;
+            }
+        }
+    }
+}
+
+function updateSeed(x, y) {
+    if (!gravityEnabled || y >= ROWS-1) return;
+    const below = grid[y+1][x];
+    if (below===M.EMPTY||below===M.WATER) { swap(x,y,x,y+1); return; }
+    if ((below===M.DIRT||below===M.GRASS||below===M.MUD) && Math.random()<0.01) {
+        grid[y][x] = M.PLANT;
+    }
+}
+
+function updateExplosive(x, y, m) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.FIRE||n===M.LAVA||n===M.MAGMA||n===M.SPARK) {
+            explode(x, y, m===M.TNT?18:m===M.BOMB?22:m===M.DYNAMITE?20:14); return;
+        }
+    }
+}
+
+function updateNuke(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n===M.FIRE||n===M.LAVA||n===M.SPARK) {
+            explode(x, y, 35); return;
+        }
+    }
+}
+
+function updateSpark(x, y) {
+    if (Math.random() < 0.15) { grid[y][x]=M.EMPTY; return; }
+    // Искра распространяется по проводам
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if ((n===M.WIRE||n===M.CABLE) && Math.random()<0.4) {
+            grid[ny][nx] = M.SPARK;
+            updated[ny][nx] = 1;
+        }
+        if (n===M.WATER && Math.random()<0.3) {
+            grid[ny][nx] = M.SPARK;
+            updated[ny][nx] = 1;
+        }
+    }
+    if (y > 0 && grid[y-1][x] === M.EMPTY && Math.random() < 0.4) swap(x, y, x, y-1);
+}
+
+function updateLightning(x, y) {
+    if (Math.random() < 0.3) { grid[y][x]=M.SPARK; return; }
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        if (grid[ny][nx]===M.WIRE || grid[ny][nx]===M.CABLE) {
+            grid[ny][nx] = M.SPARK;
+            updated[ny][nx] = 1;
+        }
+    }
+}
+
+function updatePortal(x, y) {
+    for (const [dx, dy] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n!==M.EMPTY && n!==M.PORTAL && n!==M.WALL) {
+            for (let sy = 0; sy < ROWS; sy += 3) {
+                for (let sx = 0; sx < COLS; sx += 3) {
+                    if (grid[sy][sx] === M.PORTAL && (sx!==x || sy!==y)) {
+                        for (const [dx2, dy2] of [[0,-1],[0,1],[-1,0],[1,0]]) {
+                            const tx=sx+dx2, ty=sy+dy2;
+                            if (tx<0||tx>=COLS||ty<0||ty>=ROWS) continue;
+                            if (grid[ty][tx]===M.EMPTY) {
+                                grid[ty][tx] = n;
+                                grid[ny][nx] = M.EMPTY;
+                                updated[ny][nx] = 1;
+                                updated[ty][tx] = 1;
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function updateVoid(x, y) {
+    for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++) {
+        if (dx===0&&dy===0) continue;
+        const nx=x+dx, ny=y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n!==M.EMPTY && n!==M.VOID && n!==M.WALL) {
+            if (Math.random()<0.15) { grid[ny][nx]=M.EMPTY; updated[ny][nx]=1; }
+        }
+    }
+}
+
+function updateClone(x, y) {
+    if (Math.random() < 0.02) {
+        const neighbors = [[0,-1],[0,1],[-1,0],[1,0]];
+        const valid = [];
+        for (const [dx, dy] of neighbors) {
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            const n = grid[ny][nx];
+            if (n!==M.EMPTY && n!==M.CLONE && n!==M.VOID && n!==M.WALL) {
+                valid.push({nx, ny, n});
+            }
+        }
+        if (valid.length > 0) {
+            const {nx, ny, n} = valid[(Math.random() * valid.length) | 0];
+            grid[y][x] = n;
+        }
+    }
+}
+
+function updateGlitch(x, y) {
+    // Глитч случайно меняет соседние блоки
+    if (Math.random() < 0.3) {
+        const neighbors = [[0,-1],[0,1],[-1,0],[1,0]];
+        for (const [dx, dy] of neighbors) {
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            const n = grid[ny][nx];
+            if (n!==M.EMPTY && n!==M.WALL) {
+                const mats = [M.SAND, M.WATER, M.STONE, M.FIRE, M.RAINBOW, M.MATRIX, M.HOLOGRAM];
+                grid[ny][nx] = mats[Math.floor(Math.random() * mats.length)];
+            }
+        }
+    }
+}
+
+function updateMatrix(x, y) {
+    // Матрица растёт вниз, оставляя цифровой след
+    if (y < ROWS - 1 && grid[y+1][x] === M.EMPTY && Math.random() < 0.3) {
+        swap(x, y, x, y+1);
+    }
+    // Исчезает снизу
+    if (Math.random() < 0.002) grid[y][x] = M.EMPTY;
+}
+
+function updateHologram(x, y) {
+    // Голограмма исчезает со временем
+    if (Math.random() < 0.005) grid[y][x] = M.EMPTY;
+}
+
+function updateMagnet(x, y) {
+    // Притягивает металл и железо
+    const radius = 8;
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x+dx, ny = y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            const n = grid[ny][nx];
+            if (n === M.METAL || n === M.STEEL || n === M.TITANIUM || n === M.GOLD) {
+                // Двигаем к магниту
+                const mdx = Math.sign(-dx);
+                const mdy = Math.sign(-dy);
+                const tx = nx + mdx;
+                const ty = ny + mdy;
+                if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS && grid[ty][tx] === M.EMPTY) {
+                    grid[ty][tx] = n;
+                    grid[ny][nx] = M.EMPTY;
+                    updated[ny][nx] = 1;
+                    updated[ty][tx] = 1;
+                }
+            }
+        }
+    }
+}
+
+function updateFirework(x, y) {
+    if (Math.random() < 0.01) {
+        // Взрыв
+        explode(x, y, 8);
+        // Разноцветные искры
+        for (let i = 0; i < 20; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 8;
+            const nx = Math.round(x + Math.cos(angle) * dist);
+            const ny = Math.round(y + Math.sin(angle) * dist);
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && grid[ny][nx] === M.EMPTY) {
+                grid[ny][nx] = M.SPARK;
+            }
+        }
+    }
+}
+
+function updateFuse(x, y) {
+    // Предохранитель перегорает при электрическом перегрузе
+    if (charge[y][x] > 0 && Math.random() < 0.01) {
+        grid[y][x] = M.ASH;
+    }
+}
+
+function updateRelay(x, y) {
+    // Реле передаёт заряд от сигнала к нагрузке
+    if (charge[y][x] > 0) {
+        for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+            const nx = x+dx, ny = y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            const n = grid[ny][nx];
+            if (n === M.WIRE || n === M.MOTOR || n === M.LAMP) {
+                charge[ny][nx] = 1;
+            }
+        }
+    }
+}
+
+function updateLaser(x, y) {
+    // Лазер стреляет лучом вверх/вниз/вправо/влево
+    if (charge[y][x] > 0 || Math.random() < 0.05) {
+        const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+        for (const [dx, dy] of dirs) {
+            let cx = x, cy = y;
+            for (let i = 1; i < 30; i++) {
+                cx += dx; cy += dy;
+                if (cx<0||cx>=COLS||cy<0||cy>=ROWS) break;
+                const n = grid[cy][cx];
+                if (n === M.EMPTY || n === M.SMOKE) {
+                    if (Math.random() < 0.3) {
+                        // Искра/луч - только визуально короткий
+                        if (i < 5) grid[cy][cx] = M.SPARK;
+                    }
+                } else if (n === M.FIRE || n === M.LAVA) {
+                    break;
+                } else {
+                    // Лазер поджигает
+                    if (Math.random() < 0.05) {
+                        grid[cy][cx] = M.FIRE;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+}
+
+function updateNeon(x, y) {
+    // Неон светится если есть заряд
+    // Просто визуальный эффект через рендер
+}
+
+function updateLED(x, y) {
+    // LED светится если есть заряд
+    // Визуальный эффект
+}
+
+function updateSpeaker(x, y) {
+    // Динамик вибрирует и создаёт волны (визуально)
+    if (charge[y][x] > 0 && Math.random() < 0.3) {
+        // Создаём световые волны
+        for (let i = 0; i < 3; i++) {
+            const dx = (Math.random() - 0.5) * 4;
+            const dy = (Math.random() - 0.5) * 4;
+            const nx = Math.round(x + dx);
+            const ny = Math.round(y + dy);
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && grid[ny][nx] === M.EMPTY) {
+                grid[ny][nx] = M.SPARK;
+            }
+        }
+    }
+}
+
+function updateMotor(x, y) {
+    // Мотор при питании вращает соседние шестерни
+    if (charge[y][x] > 0) {
+        for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+            const nx = x+dx, ny = y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (grid[ny][nx] === M.GEAR) {
+                charge[ny][nx] = 1;
+            }
+        }
+    }
+}
+
+function updateFan(x, y) {
+    // Вентилятор создаёт поток воздуха (отталкивает дым)
+    if (charge[y][x] > 0) {
+        for (let dy = -5; dy <= 5; dy++) {
+            for (let dx = -5; dx <= 5; dx++) {
+                const nx = x+dx, ny = y+dy;
+                if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+                if (grid[ny][nx] === M.SMOKE || grid[ny][nx] === M.STEAM) {
+                    if (Math.random() < 0.3) grid[ny][nx] = M.EMPTY;
+                }
+            }
+        }
+    }
+}
+
+function updatePump(x, y) {
+    // Насос перекачивает воду
+    if (charge[y][x] > 0) {
+        for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+            const nx = x+dx, ny = y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (grid[ny][nx] === M.WATER) {
+                // Перекачиваем воду дальше
+                const tx = nx + dx, ty = ny + dy;
+                if (tx >= 0 && tx < COLS && ty >= 0 && ty < ROWS && grid[ty][tx] === M.EMPTY) {
+                    grid[ty][tx] = M.WATER;
+                    grid[ny][nx] = M.EMPTY;
+                }
+            }
+        }
+    }
+}
+
+function updateSensor(x, y) {
+    // Датчик активируется от соседних блоков
+    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+        const nx = x+dx, ny = y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        if (grid[ny][nx] !== M.EMPTY && grid[ny][nx] !== M.SENSOR) {
+            charge[y][x] = 1;
+            return;
+        }
+    }
+}
+
+function updateTimer(x, y) {
+    // Таймер периодически замыкает цепь
+    if ((frame + x + y) % 60 === 0) {
+        charge[y][x] = 1;
+        for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+            const nx = x+dx, ny = y+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            if (grid[ny][nx] === M.WIRE) {
+                charge[ny][nx] = 1;
+            }
+        }
+    }
+}
+
+// ============= ХИМИЯ =============
+function updateChemical(x, y, m) {
+    // Химикаты смешиваются при контакте
+    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+        const nx = x+dx, ny = y+dy;
+        if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+        const n = grid[ny][nx];
+        if (n >= M.CHEM_RED && n <= M.CHEM_PINK && n !== m) {
+            // Реакция! Смешиваем цвета
+            if (Math.random() < 0.01) {
+                // Создаём эффект
+                grid[ny][nx] = M.SPARK;
+                grid[y][x] = M.SPARK;
+                return;
+            }
+        }
+    }
+    // Падение
+    if (gravityEnabled) {
+        updateLiquidFlow(x, y, 3, [M.EMPTY]);
+    }
+}
+
+// ============= ВЗРЫВ =============
+function explode(cx, cy, radius) {
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > radius) continue;
+            const nx = cx+dx, ny = cy+dy;
+            if (nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+            const n = grid[ny][nx];
+            if (n===M.WALL||n===M.OBSIDIAN||n===M.ANTIMATTER||n===M.DIAMOND) continue;
+            grid[ny][nx] = dist < radius*0.4 ? M.FIRE : (Math.random()<0.5 ? M.FIRE : M.SMOKE);
+            updated[ny][nx] = 1;
+        }
+    }
+}
+
+function swap(x1, y1, x2, y2) {
+    const t = grid[y1][x1];
+    grid[y1][x1] = grid[y2][x2];
+    grid[y2][x2] = t;
+    const s = colorSeed[y1][x1];
+    colorSeed[y1][x1] = colorSeed[y2][x2];
+    colorSeed[y2][x2] = s;
+    const c = charge[y1][x1];
+    charge[y1][x1] = charge[y2][x2];
+    charge[y2][x2] = c;
+    updated[y1][x1] = 1;
+    updated[y2][x2] = 1;
+}
+
+// ============= ОТРИСОВКА =============
+function render() {
+    ctx.fillStyle = COLORS[M.EMPTY];
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    const t = Date.now();
+    
+    for (let y = 0; y < ROWS; y++) {
+        const row = grid[y];
+        for (let x = 0; x < COLS; x++) {
+            const m = row[x];
+            if (m === M.EMPTY) continue;
+            ctx.fillStyle = getColor(m, x, y, t);
+            ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+    }
+}
+
+function getColor(m, x, y, t) {
+    const seed = colorSeed[y][x];
+    const hasCharge = charge[y][x] > 0;
+    
+    // Лампы, LED, неон, свет - светятся при заряде
+    if (m === M.LAMP) {
+        if (hasCharge) {
+            const glow = 200 + Math.sin(t * 0.01) * 55;
+            return `rgb(${glow|0}, ${glow|0}, ${100})`;
+        }
+        return '#666644';
+    }
+    if (m === M.LED) {
+        if (hasCharge) {
+            const hue = (frame * 5 + seed) % 360;
+            return `hsl(${hue}, 100%, 60%)`;
+        }
+        return '#333333';
+    }
+    if (m === M.NEON) {
+        if (hasCharge) {
+            const pulse = Math.sin(t * 0.01 + x + y) * 50 + 200;
+            return `rgb(${pulse|0}, 0, ${pulse|0})`;
+        }
+        return '#440044';
+    }
+    if (m === M.LIGHT) {
+        if (hasCharge) return '#ffffcc';
+        return '#666655';
+    }
+    if (m === M.SCREEN) {
+        if (hasCharge) {
+            const g = 100 + Math.sin(t * 0.005 + x * 0.3) * 50;
+            return `rgb(0, ${g|0}, 0)`;
+        }
+        return '#222222';
+    }
+    if (m === M.WIRE || m === M.CABLE) {
+        if (hasCharge) {
+            const pulse = Math.sin(t * 0.02 + (x + y) * 0.5) * 30;
+            return `rgb(${200+pulse|0}, ${150+pulse|0}, ${60})`;
+        }
+        return COLORS[m];
+    }
+    if (m === M.SPARK) {
+        const flicker = Math.random() * 100;
+        return `rgb(255, ${220 + flicker|0}, ${100 + flicker|0})`;
+    }
+    if (m === M.FIRE) {
+        const flicker = Math.sin(t * 0.01 + x * 0.5 + y * 0.3) * 40;
+        return `rgb(255, ${Math.max(60, 120 + flicker|0)}, ${Math.max(0, 20 + flicker/3|0)})`;
+    }
+    if (m === M.LAVA || m === M.MAGMA) {
+        const pulse = Math.sin(t * 0.003 + x * 0.2 + y * 0.2) * 25;
+        return `rgb(255, ${Math.max(50, 100 + pulse|0)}, 0)`;
+    }
+    if (m === M.RAINBOW) {
+        const hue = (frame * 3 + x * 4 + y * 4) % 360;
+        return `hsl(${hue}, 100%, 60%)`;
+    }
+    if (m === M.PLASMA) {
+        const hue = (frame * 8 + x * 10 + y * 10) % 360;
+        return `hsl(${hue}, 100%, 70%)`;
+    }
+    if (m === M.ANTIMATTER) {
+        const pulse = Math.sin(t * 0.02 + x + y) * 100;
+        return `rgb(${100 + pulse|0}, 255, 255)`;
+    }
+    if (m === M.PORTAL) {
+        const hue = (frame * 5 + (x + y) * 8) % 360;
+        return `hsl(${hue}, 90%, 55%)`;
+    }
+    if (m === M.WARP) {
+        const hue = (frame * 6 + x * 3 + y * 3) % 360;
+        return `hsl(${hue}, 100%, 50%)`;
+    }
+    if (m === M.GLITCH) {
+        const r = Math.random() * 255;
+        const g = Math.random() * 255;
+        const b = Math.random() * 255;
+        return `rgb(${r|0}, ${g|0}, ${b|0})`;
+    }
+    if (m === M.MATRIX) {
+        const bright = 150 + Math.sin(t * 0.01 + y * 0.3) * 100;
+        return `rgb(0, ${bright|0}, 0)`;
+    }
+    if (m === M.HOLOGRAM) {
+        const alpha = 0.5 + Math.sin(t * 0.005 + x + y) * 0.3;
+        return `rgba(0, 220, 255, ${alpha})`;
+    }
+    if (m === M.LASER) {
+        return `rgb(255, 0, 0)`;
+    }
+    if (m === M.FIREWORK) {
+        const hue = (frame * 10 + seed) % 360;
+        return `hsl(${hue}, 100%, 60%)`;
+    }
+    if (m === M.BATTERY) {
+        const pulse = hasCharge ? Math.sin(t * 0.01) * 30 : 0;
+        return `rgb(${34+pulse|0}, ${204+pulse|0}, 34)`;
+    }
+    if (m === M.ACCUMULATOR || m === M.GENERATOR) {
+        return '#44dd44';
+    }
+    if (m === M.SOLAR) {
+        return hasCharge ? '#4488dd' : '#224488';
+    }
+    if (m === M.COMPUTER) {
+        const blink = Math.sin(t * 0.01) > 0;
+        return blink ? '#5050aa' : '#303040';
+    }
+    if (m === M.SENSOR) {
+        return hasCharge ? '#00ffff' : '#008888';
+    }
+    if (m === M.TIMER) {
+        return hasCharge ? '#ffff88' : '#888800';
+    }
+    if (m === M.MEAT) {
+        const shade = (seed % 20) - 10;
+        return `rgb(${204 + shade}, ${68 + (shade/2|0)}, ${68 + (shade/2|0)})`;
+    }
+    
+    const base = COLORS[m];
+    if (base && (m === M.SAND || m === M.STONE || m === M.WOOD || m === M.DIRT ||
+        m === M.GRASS || m === M.METAL || m === M.GUNPOWDER || m === M.SALT ||
+        m === M.MUD || m === M.COAL || m === M.ASH || m === M.GOLD ||
+        m === M.URANIUM || m === M.CRYSTAL || m === M.AMETHYST || m === M.RUBY ||
+        m === M.EMERALD || m === M.OBSIDIAN || m === M.CONCRETE || m === M.BRICK ||
+        m === M.STEEL || m === M.TITANIUM || m === M.COPPER || m === M.SANDSTONE)) {
+        const variation = (seed % 25) - 12;
+        return adjustColor(base, variation);
+    }
+    return base;
+}
+
+function adjustColor(hex, amount) {
+    if (!hex || hex[0] !== '#') return hex;
+    const num = parseInt(hex.slice(1), 16);
+    let r = (num >> 16) + amount;
+    let g = ((num >> 8) & 0xFF) + amount;
+    let b = (num & 0xFF) + amount;
+    r = r < 0 ? 0 : r > 255 ? 255 : r;
+    g = g < 0 ? 0 : g > 255 ? 255 : g;
+    b = b < 0 ? 0 : b > 255 ? 255 : b;
+    return `rgb(${r},${g},${b})`;
+}
+
+// ============= КИСТЬ =============
+function drawBrush(cx, cy, material) {
+    const half = Math.floor(brushSize / 2);
+    const half2 = half * half + 1;
+    
+    for (let dy = -half; dy <= half; dy++) {
+        for (let dx = -half; dx <= half; dx++) {
+            if (dx*dx + dy*dy > half2) continue;
+            const x = cx + dx, y = cy + dy;
+            if (x<0||x>=COLS||y<0||y>=ROWS) continue;
+            
+            if (material === M.EMPTY) {
+                grid[y][x] = M.EMPTY;
+                charge[y][x] = 0;
+            } else if (replaceMode) {
+                grid[y][x] = material;
+            } else {
+                if (grid[y][x] === M.WALL && material !== M.EMPTY && material !== M.ACID) continue;
+                grid[y][x] = material;
+            }
+            colorSeed[y][x] = (Math.random() * 255) | 0;
+        }
+    }
+}
+
+// ============= UI =============
+function buildTabs() {
+    const tabsRow = document.getElementById('tabsRow');
+    tabsRow.innerHTML = '';
+    for (const [key, cat] of Object.entries(CATEGORIES)) {
+        const btn = document.createElement('button');
+        let className = 'tab-btn';
+        if (cat.tech) className += ' tech-tab';
+        if (key === currentTab) className += ' active';
+        btn.className = className;
+        btn.textContent = cat.name;
+        btn.dataset.tab = key;
+        btn.addEventListener('click', () => {
+            currentTab = key;
+            buildTabs();
+            buildMaterials();
+        });
+        tabsRow.appendChild(btn);
+    }
+}
+
+function buildMaterials() {
+    const scroll = document.getElementById('materialsScroll');
+    scroll.innerHTML = '';
+    const cat = CATEGORIES[currentTab];
+    if (!cat) return;
+    for (const item of cat.items) {
+        const btn = document.createElement('button');
+        let className = 'material-btn';
+        if (cat.tech) className += ' tech-btn';
+        if (item.m === currentMaterial) className += ' active';
+        btn.className = className;
+        btn.dataset.material = item.m;
+        btn.innerHTML = `<span class="icon">${item.icon}</span><span class="name">${item.name}</span>`;
+        btn.addEventListener('click', () => {
+            currentMaterial = item.m;
+            updateActiveButton();
+            updateBrushPreview();
+        });
+        scroll.appendChild(btn);
+    }
+}
+
+function updateActiveButton() {
+    document.querySelectorAll('.material-btn').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.material) === currentMaterial);
+    });
+}
+
+function updateBrushPreview() {
+    const preview = document.getElementById('brushPreview');
+    const size = Math.max(8, Math.min(30, brushSize * 1.5));
+    preview.style.width = size + 'px';
+    preview.style.height = size + 'px';
+    preview.style.background = COLORS[currentMaterial] || '#00d4ff';
+}
+
+// ============= СОБЫТИЯ =============
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: Math.floor((e.clientX - rect.left) * scaleX / CELL_SIZE),
+        y: Math.floor((e.clientY - rect.top) * scaleY / CELL_SIZE)
+    };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    isDrawing = true;
+    isErasing = e.button === 2;
+    const pos = getMousePos(e);
+    const material = isErasing ? M.EMPTY : currentMaterial;
+    drawBrush(pos.x, pos.y, material);
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const pos = getMousePos(e);
+    const material = isErasing ? M.EMPTY : currentMaterial;
+    drawBrush(pos.x, pos.y, material);
+});
+
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseleave', () => isDrawing = false);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (e.deltaY < 0) brushSize = Math.min(30, brushSize + 1);
+    else brushSize = Math.max(1, brushSize - 1);
+    document.getElementById('brushSize').value = brushSize;
+    document.getElementById('brushSizeValue').textContent = brushSize;
+    updateBrushPreview();
+}, { passive: false });
+
+document.getElementById('brushSize').addEventListener('input', (e) => {
+    brushSize = parseInt(e.target.value);
+    document.getElementById('brushSizeValue').textContent = brushSize;
+    updateBrushPreview();
+});
+
+document.getElementById('pauseBtn').addEventListener('click', () => {
+    paused = !paused;
+    document.getElementById('pauseBtn').classList.toggle('active', !paused);
+});
+
+document.getElementById('gravityBtn').addEventListener('click', () => {
+    gravityEnabled = !gravityEnabled;
+    document.getElementById('gravityBtn').classList.toggle('active', gravityEnabled);
+});
+
+document.getElementById('replaceBtn').addEventListener('click', () => {
+    replaceMode = !replaceMode;
+    document.getElementById('replaceBtn').classList.toggle('active', replaceMode);
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => initGrid());
+
+document.getElementById('borderBtn').addEventListener('click', () => {
+    for (let x = 0; x < COLS; x++) {
+        grid[0][x] = M.WALL;
+        grid[ROWS-1][x] = M.WALL;
+    }
+    for (let y = 0; y < ROWS; y++) {
+        grid[y][0] = M.WALL;
+        grid[y][COLS-1] = M.WALL;
+    }
+});
+
+document.getElementById('fillBtn').addEventListener('click', () => {
+    const startY = Math.floor(ROWS * 0.6);
+    for (let y = startY; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            if (grid[y][x] === M.EMPTY) grid[y][x] = M.WATER;
+        }
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= 9) {
+        currentMaterial = quickSelect[num - 1];
+        updateActiveButton();
+        updateBrushPreview();
+    } else if (e.key === '0') {
+        currentMaterial = quickSelect[9];
+        updateActiveButton();
+        updateBrushPreview();
+    } else if (e.key === ' ') {
+        e.preventDefault();
+        paused = !paused;
+        document.getElementById('pauseBtn').classList.toggle('active', !paused);
+    } else if (e.key.toLowerCase() === 'c') {
+        initGrid();
+    }
+});
+
+// ============= ИГРОВОЙ ЦИКЛ =============
+function gameLoop() {
+    const now = performance.now();
+    frameCount++;
+    
+    if (now - lastFpsUpdate > 500) {
+        fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
+        document.getElementById('fps').textContent = fps;
+        frameCount = 0;
+        lastFpsUpdate = now;
+    }
+    
+    if (frame % 30 === 0) {
+        let count = 0;
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                if (grid[y][x] !== M.EMPTY) count++;
+            }
+        }
+        document.getElementById('particles').textContent = count.toLocaleString();
+    }
+    
+    update();
+    render();
+    requestAnimationFrame(gameLoop);
+}
+
+// ============= СТАРТ =============
+initGrid();
+buildTabs();
+buildMaterials();
+updateBrushPreview();
+
+// Стартовый ландшафт
+for (let x = 0; x < COLS; x++) {
+    const groundY = ROWS - 20 - Math.floor(Math.sin(x * 0.05) * 4);
+    for (let y = groundY; y < ROWS; y++) {
+        grid[y][x] = y === groundY ? M.GRASS : M.DIRT;
+    }
+}
+
+gameLoop();
+</script>
+</body>
+</html>
